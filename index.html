@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>怪物猎人武器自定义与数值平衡工坊</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mh: {
+                            bg: '#0e1117',
+                            card: '#161b22',
+                            panel: '#1c232d',
+                            border: '#30363d',
+                            gold: '#dfb15b',
+                            goldLight: '#f5d77f',
+                            red: '#e74c3c',
+                            orange: '#e67e22',
+                            yellow: '#f1c40f',
+                            green: '#2ecc71',
+                            blue: '#3498db',
+                            white: '#ecf0f1',
+                            purple: '#9b59b6',
+                            darkGold: '#8c6d31'
+                        }
+                    },
+                    fontFamily: {
+                        mh: ['Cinzel', 'Noto Sans SC', 'serif'],
+                        sans: ['Noto Sans SC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0e14;
+            color: #c9d1d9;
+            font-family: 'Noto Sans SC', sans-serif;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(223, 177, 91, 0.08) 0%, transparent 70%),
+                radial-gradient(circle at 0% 100%, rgba(22, 27, 34, 0.8) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .mh-border {
+            border: 2px solid #dfb15b;
+            border-image: linear-gradient(to bottom right, #dfb15b, #4a3b1e, #dfb15b) 1;
+        }
+
+        .mh-card-shadow {
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(223, 177, 91, 0.15);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #21262d;
+            height: 6px;
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #dfb15b;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(223, 177, 91, 0.8);
+            border: 2px solid #161b22;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #dfb15b;
+        }
+
+        .sharpness-bar-segment {
+            transition: width 0.2s ease-in-out;
+            height: 100%;
+            display: inline-block;
+        }
+
+        /* Number Spinner Tweaks */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-mh-border bg-mh-card/90 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded bg-gradient-to-br from-mh-gold to-amber-800 flex items-center justify-center text-mh-bg font-bold text-xl shadow-lg border border-yellow-200">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="font-mh font-bold text-lg sm:text-xl text-mh-gold tracking-wide">怪物猎人武器工坊</h1>
+                    <p class="text-xs text-gray-400">Monster Hunter Weapon Balancer & Smithy Tool</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3 text-sm">
+                <button id="btn-formula-modal" class="px-3 py-1.5 rounded bg-mh-panel border border-mh-border hover:border-mh-gold text-gray-300 hover:text-mh-gold transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-calculator text-mh-gold"></i>
+                    <span>平衡公式说明</span>
+                </button>
+                <button id="btn-reset" class="px-3 py-1.5 rounded bg-mh-panel border border-mh-border hover:border-red-500 text-gray-300 hover:text-red-400 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>重置模版</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+
+        <!-- Preset Selector Bar -->
+        <section class="mb-6 bg-mh-card border border-mh-border rounded-lg p-4 shadow-md flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-mh-gold"></i>
+                <span class="font-semibold text-sm text-gray-200">快捷预设模板：</span>
+            </div>
+            <div class="flex flex-wrap gap-2" id="preset-buttons">
+                <button data-preset="baseline" class="preset-btn text-xs px-3 py-1.5 rounded bg-amber-900/40 border border-mh-gold text-mh-gold font-medium hover:bg-amber-800/50 transition">
+                    基准平衡型 (400物理/30白/0属性)
+                </button>
+                <button data-preset="raw-heavy" class="preset-btn text-xs px-3 py-1.5 rounded bg-mh-panel border border-mh-border text-gray-300 hover:border-mh-gold transition">
+                    高物理大剑 (380物理/-15%会心/蓝斩)
+                </button>
+                <button data-preset="purple-meta" class="preset-btn text-xs px-3 py-1.5 rounded bg-mh-panel border border-mh-border text-gray-300 hover:border-mh-gold transition">
+                    紫斩竞速型 (260物理/30紫斩/15%会心)
+                </button>
+                <button data-preset="bow-element" class="preset-btn text-xs px-3 py-1.5 rounded bg-mh-panel border border-mh-border text-gray-300 hover:border-mh-gold transition">
+                    属性连射弓 (330物理/30属性/强击+强属性+)
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: Customization Controls (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 1. Weapon Basic Info Card -->
+                <div class="bg-mh-card border border-mh-border rounded-lg p-5 shadow-lg">
+                    <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider mb-4 flex items-center justify-between border-b border-mh-border pb-2">
+                        <span><i class="fa-solid fa-pen-nib mr-2"></i>1. 武器基础信息</span>
+                        <span class="text-xs font-normal text-gray-400" id="weapon-type-display">大剑 (Great Sword)</span>
+                    </h2>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">武器名称</label>
+                            <input type="text" id="input-name" value="黑钢祖龙大剑" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-mh-gold">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">武器种类</label>
+                            <select id="select-type" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <option value="GreatSword">大剑 (Great Sword)</option>
+                                <option value="LongSword">太刀 (Long Sword)</option>
+                                <option value="SwordAndShield">片手剑 (Sword & Shield)</option>
+                                <option value="DualBlades">双刀 (Dual Blades)</option>
+                                <option value="Hammer">大锤 (Hammer)</option>
+                                <option value="HuntingHorn">狩猎笛 (Hunting Horn)</option>
+                                <option value="Lance">长枪 (Lance)</option>
+                                <option value="Gunlance">铳枪 (Gunlance)</option>
+                                <option value="SwitchAxe">斩击斧 (Switch Axe)</option>
+                                <option value="ChargeBlade">盾斧 (Charge Blade)</option>
+                                <option value="InsectGlaive">操虫棍 (Insect Glaive)</option>
+                                <option value="LightBowgun">轻弩炮 (Light Bowgun)</option>
+                                <option value="HeavyBowgun">重弩炮 (Heavy Bowgun)</option>
+                                <option value="Bow">弓 (Bow)</option>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Phial Type Selection (Switch Axe & Charge Blade Exclusive) -->
+                        <div id="phial-type-container" class="hidden sm:col-span-2 bg-mh-panel/90 border border-amber-500/40 p-3 rounded space-y-2">
+                            <label class="block text-xs text-amber-400 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-vial-circle-check"></i>
+                                <span id="phial-label-title">瓶子类型设定 (Phial Type)</span>
+                            </label>
+                            <select id="select-phial-type" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <!-- Dynamic Options -->
+                            </select>
+
+                            <!-- Custom Phial Value Controls (Switch Axe Poison/Para/Exhaust/Dragon) -->
+                            <div id="phial-value-container" class="hidden pt-2 border-t border-mh-border/60 bg-black/30 p-2 rounded">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-xs text-purple-300 font-medium">瓶数值 (范围: 0~40, 每1点消耗2锻造值)</label>
+                                    <span class="text-xs font-bold text-mh-gold" id="val-phial-value">20</span>
+                                </div>
+                                <input type="range" id="slider-phial-value" min="0" max="40" step="1" value="20" class="w-full">
+                            </div>
+
+                            <p class="text-[11px] text-gray-400" id="phial-desc-hint">强化瓶/榴弹瓶为标准基准(0耗)，强属性瓶加算10锻造值，特殊瓶每1点数值占用2锻造值。</p>
+                        </div>
+
+                        <!-- Dynamic Gunlance Shelling Container -->
+                        <div id="gunlance-container" class="hidden sm:col-span-2 bg-mh-panel/90 border border-amber-500/40 p-3 rounded space-y-3">
+                            <label class="block text-xs text-amber-400 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-bomb"></i>
+                                <span>铳枪炮击设定 (Gunlance Shelling)</span>
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">炮击类型</label>
+                                    <select id="select-shelling-type" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                        <option value="Normal">通常型 (Normal - 5发弹药/全弹发射优势)</option>
+                                        <option value="Long">放射型 (Long - 3发弹药/龙航炮与蓄力炮)</option>
+                                        <option value="Wide">扩散型 (Wide - 2发弹药/单发高伤害/龙抗炮)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">炮击等级 (Lv.8 升级需10Pt)</label>
+                                    <select id="select-shelling-level" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                        <option value="1">Lv.1 (0 Pt)</option>
+                                        <option value="2">Lv.2 (0 Pt)</option>
+                                        <option value="3">Lv.3 (0 Pt)</option>
+                                        <option value="4">Lv.4 (0 Pt)</option>
+                                        <option value="5">Lv.5 (0 Pt)</option>
+                                        <option value="6">Lv.6 (0 Pt)</option>
+                                        <option value="7">Lv.7 (0 Pt)</option>
+                                        <option value="8" selected>Lv.8 (+10.0 Pt 锻造值)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Kinsect Level Container (Insect Glaive) -->
+                        <div id="kinsect-container" class="hidden sm:col-span-2 bg-mh-panel/90 border border-amber-500/40 p-3 rounded space-y-2">
+                            <label class="block text-xs text-amber-400 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-bug"></i>
+                                <span>操虫棍猎虫等级 (Kinsect Level 1-15, 默认14级)</span>
+                            </label>
+                            <select id="select-kinsect-level" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <!-- Dynamically populated 1 to 15 -->
+                            </select>
+                            <p class="text-[11px] text-gray-400">默认14级(0Pt)；升级至15级消耗10Pt；14级以下每降低1级返还10Pt预算。</p>
+                        </div>
+
+                        <!-- Dynamic Bow Config Container (Coating Selection) -->
+                        <div id="bow-container" class="hidden sm:col-span-2 bg-mh-panel/90 border border-amber-500/40 p-3 rounded space-y-3">
+                            <label class="block text-xs text-amber-400 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-bow-arrow"></i>
+                                <span>弓箭专属设定 (Bow Coatings & Arc Shot)</span>
+                            </label>
+
+                            <div>
+                                <label class="block text-[11px] text-gray-400 mb-1">曲射类型 (Arc Shot)</label>
+                                <select id="select-arc-shot" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                    <option value="Recovery">回复型 (Recovery - 持续恢复体力)</option>
+                                    <option value="Affinity">会心强化型 (Affinity - 提高面板会心)</option>
+                                    <option value="Stun">冲角/打击型 (Stun/Impact - 气绝打眩晕)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] text-gray-400 mb-1.5">可装填瓶类型 (每种瓶5Pt, 接击瓶免费; 可选+级强化 +15Pt)</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="bow-coatings-grid">
+                                    <!-- Dynamic Coating Options -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">稀有度 (Rarity)</label>
+                            <select id="select-rarity" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <option value="10">Rarity 10 (古龙/顶尖)</option>
+                                <option value="9">Rarity 9 (大师级)</option>
+                                <option value="8">Rarity 8 (高级装备)</option>
+                                <option value="7">Rarity 7 (上位顶尖)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">防御力加成 (+Defense)</label>
+                            <input type="number" id="input-defense" value="0" min="0" max="100" step="5" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-mh-gold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Core Stats Adjustments -->
+                <div class="bg-mh-card border border-mh-border rounded-lg p-5 shadow-lg space-y-5">
+                    <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider flex items-center justify-between border-b border-mh-border pb-2">
+                        <span><i class="fa-solid fa-chart-line mr-2"></i>2. 核心数值与比例兑换</span>
+                        <span class="text-xs text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">比例 属性:攻击:会心 = 1:2:3</span>
+                    </h2>
+
+                    <!-- Raw Attack Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-medium text-gray-200">基础攻击力 (Attack / RAW)</label>
+                            <span class="text-sm font-bold text-mh-gold" id="val-attack">400</span>
+                        </div>
+                        <input type="range" id="slider-attack" min="60" max="400" step="10" value="400" class="w-full">
+                        <div class="relative w-full text-[10px] text-gray-500 mt-1 h-4">
+                            <span class="absolute left-0">60 (最低)</span>
+                            <span class="absolute -translate-x-1/2" style="left: 70.6%;">300</span>
+                            <span class="absolute right-0">400 (默认基准/上限)</span>
+                        </div>
+                    </div>
+
+                    <!-- Affinity Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-medium text-gray-200">会心率 (Affinity %)</label>
+                            <span class="text-sm font-bold text-mh-gold" id="val-affinity">0%</span>
+                        </div>
+                        <input type="range" id="slider-affinity" min="-100" max="100" step="5" value="0" class="w-full">
+                        <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                            <span>-100% (极负会心)</span>
+                            <span>0% (默认基准)</span>
+                            <span>+100% (必暴击)</span>
+                        </div>
+                    </div>
+
+                    <!-- Dual Affinity Expandable Card -->
+                    <div class="bg-mh-panel/80 border border-mh-border rounded-lg p-3">
+                        <button id="btn-toggle-dual-affinity" type="button" class="w-full flex items-center justify-between text-xs font-semibold text-amber-400 hover:text-mh-gold transition">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-yin-yang text-purple-400"></i>
+                                <span>双会心模式 (混沌狂龙特化)</span>
+                                <span id="badge-dual-active" class="hidden text-[10px] bg-purple-900/60 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700">已启用</span>
+                            </span>
+                            <i id="icon-dual-chevron" class="fa-solid fa-chevron-down transition-transform duration-200"></i>
+                        </button>
+
+                        <div id="panel-dual-affinity" class="hidden mt-3 pt-3 border-t border-mh-border/60 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label for="toggle-dual-affinity-checkbox" class="text-xs text-gray-300 cursor-pointer">开启双会心机制 (双会心共存)</label>
+                                <input type="checkbox" id="toggle-dual-affinity-checkbox" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                            </div>
+                            
+                            <div id="dual-affinity-controls" class="space-y-3 opacity-50 pointer-events-none transition-opacity">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-red-400 font-medium">负会心部分 (未克服)</span>
+                                        <span id="val-neg-affinity" class="font-mono text-red-400 font-bold">-20%</span>
+                                    </div>
+                                    <input type="range" id="slider-neg-affinity" min="-100" max="0" step="5" value="-20" class="w-full">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-blue-400 font-medium">正会心部分 (基础正会心)</span>
+                                        <span id="val-pos-affinity" class="font-mono text-blue-400 font-bold">+15%</span>
+                                    </div>
+                                    <input type="range" id="slider-pos-affinity" min="0" max="100" step="5" value="15" class="w-full">
+                                </div>
+                                <div class="bg-black/40 p-2 rounded text-[11px] text-gray-400 flex justify-between items-center">
+                                    <span>克服狂龙病毒后会心:</span>
+                                    <span id="val-overcome-affinity" class="font-bold text-purple-300 font-mono">+35%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Element / Status Controls -->
+                    <div class="bg-mh-panel p-3.5 rounded border border-mh-border space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">主属性 / 异常状态类型</label>
+                                <select id="select-element-type" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                    <option value="None">无属性 (None)</option>
+                                    <option value="Fire">火属性 (Fire)</option>
+                                    <option value="Water">水属性 (Water)</option>
+                                    <option value="Thunder">雷属性 (Thunder)</option>
+                                    <option value="Ice">冰属性 (Ice)</option>
+                                    <option value="Dragon">龙属性 (Dragon)</option>
+                                    <option value="Poison">毒状态 (Poison)</option>
+                                    <option value="Para">麻痹状态 (Paralysis)</option>
+                                    <option value="Sleep">睡眠状态 (Sleep)</option>
+                                    <option value="Blast">爆破属性 (Blast)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-xs text-gray-400">主属性值 (Element Value 1)</label>
+                                    <span class="text-xs font-bold text-mh-gold" id="val-element">0</span>
+                                </div>
+                                <input type="range" id="slider-element" min="0" max="100" step="1" value="0" class="w-full" disabled>
+                            </div>
+                        </div>
+
+                        <!-- Dual Element Panel (Dual Blades Exclusive) -->
+                        <div id="dual-element-container" class="hidden pt-2 border-t border-mh-border/60">
+                            <div class="flex items-center justify-between mb-2">
+                                <label for="toggle-dual-element-checkbox" class="text-xs font-semibold text-amber-400 cursor-pointer flex items-center gap-1.5">
+                                    <i class="fa-solid fa-scissors text-amber-400"></i>
+                                    <span>双刀专属：开启双属性模式 (属性消耗改为 1:1)</span>
+                                </label>
+                                <input type="checkbox" id="toggle-dual-element-checkbox" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                            </div>
+
+                            <div id="dual-element-controls" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 bg-black/30 p-2.5 rounded border border-mh-border/50">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">副属性 / 异常状态类型</label>
+                                    <select id="select-element-type-2" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                        <option value="None">无 (None)</option>
+                                        <option value="Fire">火属性 (Fire)</option>
+                                        <option value="Water">水属性 (Water)</option>
+                                        <option value="Thunder">雷属性 (Thunder)</option>
+                                        <option value="Ice">冰属性 (Ice)</option>
+                                        <option value="Dragon">龙属性 (Dragon)</option>
+                                        <option value="Poison">毒状态 (Poison)</option>
+                                        <option value="Para">麻痹状态 (Paralysis)</option>
+                                        <option value="Sleep">睡眠状态 (Sleep)</option>
+                                        <option value="Blast">爆破属性 (Blast)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-xs text-gray-400">副属性值 (Element Value 2)</label>
+                                        <span class="text-xs font-bold text-mh-gold" id="val-element-2">0</span>
+                                    </div>
+                                    <input type="range" id="slider-element-2" min="0" max="100" step="1" value="0" class="w-full" disabled>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Sharpness Gauge Customizer (For Melee) / Ranged Spec Customizer (For Bow & Guns) -->
+                <div class="bg-mh-card border border-mh-border rounded-lg p-5 shadow-lg space-y-4">
+                    
+                    <!-- Melee Sharpness Panel -->
+                    <div id="melee-sharpness-panel" class="space-y-4">
+                        <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider flex items-center justify-between border-b border-mh-border pb-2">
+                            <span><i class="fa-solid fa-gauge-high mr-2"></i>3. 斩味槽 (Sharpness Gauge) 自定义</span>
+                            <span class="text-xs text-purple-400 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800">超出400免费扩展 | 紫斩:攻击 = 1:1</span>
+                        </h2>
+
+                        <!-- Live Sharpness Gauge Render -->
+                        <div class="bg-black/80 p-3 rounded border border-mh-border space-y-2">
+                            <div class="text-xs text-gray-400 flex justify-between">
+                                <span>当前斩味效果预览 (400~450扩展斩味不占锻造值):</span>
+                                <span id="sharpness-total-text" class="text-mh-gold font-mono">350 / 450</span>
+                            </div>
+                            <!-- Visual Gauge Bar -->
+                            <div class="h-6 w-full bg-gray-900 rounded overflow-hidden flex border border-gray-700 shadow-inner relative" id="sharpness-preview-bar">
+                                <!-- Injected JS -->
+                            </div>
+                            <!-- Sharpness Scale Ticks and Labels -->
+                            <div class="relative w-full text-[10px] text-gray-400 h-4 mt-1 pointer-events-none font-mono">
+                                <span class="absolute left-0">0</span>
+                                <span class="absolute left-[44.4%] -translate-x-1/2">200</span>
+                                <span class="absolute left-[88.88%] -translate-x-1/2 text-amber-400 font-bold flex flex-col items-center">
+                                    <span class="text-[8px] leading-none">▲</span>
+                                    <span>400基准线</span>
+                                </span>
+                                <span class="absolute right-0 text-purple-300">450</span>
+                            </div>
+                        </div>
+
+                        <!-- Individual Color Sliders (Step = 10) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-red-400 font-bold mb-1">
+                                    <span>红斩</span><span id="val-sh-red">50</span>
+                                </div>
+                                <input type="range" id="slider-sh-red" min="0" max="150" step="10" value="50" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-orange-400 font-bold mb-1">
+                                    <span>橙斩</span><span id="val-sh-orange">50</span>
+                                </div>
+                                <input type="range" id="slider-sh-orange" min="0" max="150" step="10" value="50" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-yellow-300 font-bold mb-1">
+                                    <span>黄斩</span><span id="val-sh-yellow">50</span>
+                                </div>
+                                <input type="range" id="slider-sh-yellow" min="0" max="150" step="10" value="50" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-green-400 font-bold mb-1">
+                                    <span>绿斩</span><span id="val-sh-green">100</span>
+                                </div>
+                                <input type="range" id="slider-sh-green" min="0" max="200" step="10" value="100" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-blue-400 font-bold mb-1">
+                                    <span>蓝斩</span><span id="val-sh-blue">70</span>
+                                </div>
+                                <input type="range" id="slider-sh-blue" min="0" max="150" step="10" value="70" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <div class="flex justify-between text-slate-200 font-bold mb-1">
+                                    <span>白斩 (基准30)</span><span id="val-sh-white">30</span>
+                                </div>
+                                <input type="range" id="slider-sh-white" min="0" max="150" step="10" value="30" class="w-full">
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-purple-400/50 bg-purple-950/20 col-span-2">
+                                <div class="flex justify-between text-purple-400 font-bold mb-1">
+                                    <span>紫斩 (1:1 惩罚)</span><span id="val-sh-purple">0</span>
+                                </div>
+                                <input type="range" id="slider-sh-purple" min="0" max="100" step="10" value="0" class="w-full">
+                                <p class="text-[10px] text-gray-400 mt-1">每1点紫斩扣除1点锻造值</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bow Charge Shot Panel (Replaces Sharpness for Bow) -->
+                    <div id="bow-charge-panel" class="hidden space-y-3">
+                        <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider flex items-center justify-between border-b border-mh-border pb-2">
+                            <span><i class="fa-solid fa-crosshairs mr-2"></i>3. 弓箭蓄力攻击阶段 (Bow Charge Shots)</span>
+                            <span class="text-xs text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">消耗=(箭种等级-蓄力等级-1)*5</span>
+                        </h2>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <!-- Charge Level 1 -->
+                            <div class="bg-mh-panel p-3 rounded border border-mh-border space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-amber-400 font-semibold">蓄力 Level 1</span>
+                                    <span class="font-mono text-[11px] text-mh-gold" id="cost-bow-c1">0 Pt</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select id="select-bow-type-1" class="w-2/3 bg-mh-bg border border-mh-border rounded px-2 py-1 text-white text-xs">
+                                        <option value="Rapid">连射 (Rapid)</option>
+                                        <option value="Pierce">贯通 (Pierce)</option>
+                                        <option value="Spread">扩散 (Spread)</option>
+                                        <option value="Heavy">重射 (Heavy)</option>
+                                    </select>
+                                    <div class="flex items-center gap-1 w-1/3">
+                                        <span class="text-gray-400 text-[10px]">Lv:</span>
+                                        <input type="number" id="input-bow-lvl-1" min="1" max="10" value="2" class="w-full bg-mh-bg border border-mh-border rounded px-1.5 py-1 text-white text-xs font-mono text-center">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Charge Level 2 -->
+                            <div class="bg-mh-panel p-3 rounded border border-mh-border space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-amber-400 font-semibold">蓄力 Level 2</span>
+                                    <span class="font-mono text-[11px] text-mh-gold" id="cost-bow-c2">0 Pt</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select id="select-bow-type-2" class="w-2/3 bg-mh-bg border border-mh-border rounded px-2 py-1 text-white text-xs">
+                                        <option value="Rapid">连射 (Rapid)</option>
+                                        <option value="Pierce">贯通 (Pierce)</option>
+                                        <option value="Spread">扩散 (Spread)</option>
+                                        <option value="Heavy">重射 (Heavy)</option>
+                                    </select>
+                                    <div class="flex items-center gap-1 w-1/3">
+                                        <span class="text-gray-400 text-[10px]">Lv:</span>
+                                        <input type="number" id="input-bow-lvl-2" min="1" max="10" value="3" class="w-full bg-mh-bg border border-mh-border rounded px-1.5 py-1 text-white text-xs font-mono text-center">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Charge Level 3 -->
+                            <div class="bg-mh-panel p-3 rounded border border-mh-border space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-amber-400 font-semibold">蓄力 Level 3 (主力输出段)</span>
+                                    <span class="font-mono text-[11px] text-mh-gold" id="cost-bow-c3">0 Pt</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select id="select-bow-type-3" class="w-2/3 bg-mh-bg border border-mh-border rounded px-2 py-1 text-white text-xs">
+                                        <option value="Rapid">连射 (Rapid)</option>
+                                        <option value="Pierce">贯通 (Pierce)</option>
+                                        <option value="Spread">扩散 (Spread)</option>
+                                        <option value="Heavy">重射 (Heavy)</option>
+                                    </select>
+                                    <div class="flex items-center gap-1 w-1/3">
+                                        <span class="text-gray-400 text-[10px]">Lv:</span>
+                                        <input type="number" id="input-bow-lvl-3" min="1" max="10" value="4" class="w-full bg-mh-bg border border-mh-border rounded px-1.5 py-1 text-white text-xs font-mono text-center">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Charge Level 4 -->
+                            <div class="bg-mh-panel p-3 rounded border border-mh-border space-y-2" id="box-bow-c4">
+                                <div class="flex justify-between items-center">
+                                    <label class="flex items-center space-x-1 cursor-pointer">
+                                        <input type="checkbox" id="chk-disable-c4" class="accent-amber-500 rounded">
+                                        <span class="text-amber-300 font-semibold">禁用 Level 4 (+20Pt)</span>
+                                    </label>
+                                    <span class="font-mono text-[11px] text-mh-gold" id="cost-bow-c4">0 Pt</span>
+                                </div>
+                                <div class="flex gap-2" id="controls-bow-c4">
+                                    <select id="select-bow-type-4" class="w-2/3 bg-mh-bg border border-mh-border rounded px-2 py-1 text-white text-xs">
+                                        <option value="Rapid">连射 (Rapid)</option>
+                                        <option value="Pierce">贯通 (Pierce)</option>
+                                        <option value="Spread">扩散 (Spread)</option>
+                                        <option value="Heavy">重射 (Heavy)</option>
+                                    </select>
+                                    <div class="flex items-center gap-1 w-1/3">
+                                        <span class="text-gray-400 text-[10px]">Lv:</span>
+                                        <input type="number" id="input-bow-lvl-4" min="1" max="10" value="5" class="w-full bg-mh-bg border border-mh-border rounded px-1.5 py-1 text-white text-xs font-mono text-center">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bowgun Ammo & Cluster Panel (Replaces Sharpness for LBG & HBG) -->
+                    <div id="bowgun-ammo-panel" class="hidden space-y-3">
+                        <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider flex items-center justify-between border-b border-mh-border pb-2">
+                            <span><i class="fa-solid fa-gun mr-2"></i>3. 弩炮弹药装填与规格 (Bowgun Ammo Specifications)</span>
+                            <span class="text-xs text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">远程免斩味</span>
+                        </h2>
+
+                        <!-- Cluster Type Selection -->
+                        <div class="bg-mh-panel p-3 rounded border border-amber-500/40 space-y-1">
+                            <label class="block text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-burst"></i>
+                                <span>扩散弹发射类型 (Cluster Ammo Mode)</span>
+                            </label>
+                            <select id="select-cluster-mode" class="w-full bg-mh-bg border border-mh-border rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-mh-gold">
+                                <option value="Arc">曲射/弧线抛物线发射 (Arc Payload - 经典高伤害抛物线)</option>
+                                <option value="Straight">直射/水平狙击发射 (Straight Fire - 直线平射/高速打击)</option>
+                                <option value="Disabled">不兼容扩散弹 (Disabled)</option>
+                            </select>
+                        </div>
+
+                        <!-- Special Rapid/Auto Reload Specs -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <label class="block text-gray-400 mb-1">主打物理弹种</label>
+                                <select id="select-main-ammo" class="w-full bg-mh-bg border border-mh-border rounded px-2 py-1 text-white">
+                                    <option value="Normal 3">通常弹 Lv.3 (大容量)</option>
+                                    <option value="Pierce 3">贯通弹 Lv.3 (多段穿透)</option>
+                                    <option value="Spread 3">散弹 Lv.3 (近距离轰爆)</option>
+                                </select>
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <label class="block text-gray-400 mb-1">速射 / 自动重装</label>
+                                <select id="select-rapid-fire" class="w-full bg-mh-bg border border-mh-bg rounded px-2 py-1 text-white">
+                                    <option value="None">无特化速射 (0 Pt)</option>
+                                    <option value="Normal2">通常弹2 速射 (+2 Pt)</option>
+                                    <option value="Pierce2">贯通弹2 速射 (+3 Pt)</option>
+                                    <option value="Elemental">属性弹 速射 (+4 Pt)</option>
+                                </select>
+                            </div>
+                            <div class="bg-mh-panel p-2 rounded border border-mh-border">
+                                <label class="block text-gray-400 mb-1">特殊弹药 (如斩裂/彻甲)</label>
+                                <select id="select-special-ammo" class="w-full bg-mh-bg border border-mh-border rounded px-2 py-1 text-white">
+                                    <option value="Sticky">彻甲榴弹 Lv.3 兼容</option>
+                                    <option value="Slicing">斩裂弹 兼容 (+2 Pt)</option>
+                                    <option value="Wyvern">龙航/龙击弹 兼容</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 4. Slots & Auxiliary Features -->
+                <div class="bg-mh-card border border-mh-border rounded-lg p-5 shadow-lg">
+                    <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider mb-2 border-b border-mh-border pb-2">
+                        <i class="fa-solid fa-gem mr-2"></i>4. 镶嵌槽 (Slots) 与 规则消耗
+                    </h2>
+                    <p class="text-[11px] text-gray-400 mb-4">开新孔: -10点 | 升2/3级: 各+5点(-15/-20点) | 升4级孔: +10点(-30点)</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">孔位 1 (Slot 1)</label>
+                            <select id="select-slot-1" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <option value="0">无 (0 Pt)</option>
+                                <option value="1">Level 1 (10 Pt)</option>
+                                <option value="2">Level 2 (15 Pt)</option>
+                                <option value="3">Level 3 (20 Pt)</option>
+                                <option value="4">Level 4 (30 Pt)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">孔位 2 (Slot 2)</label>
+                            <select id="select-slot-2" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <option value="0">无 (0 Pt)</option>
+                                <option value="1">Level 1 (10 Pt)</option>
+                                <option value="2">Level 2 (15 Pt)</option>
+                                <option value="3">Level 3 (20 Pt)</option>
+                                <option value="4">Level 4 (30 Pt)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">孔位 3 (Slot 3)</label>
+                            <select id="select-slot-3" class="w-full bg-mh-panel border border-mh-border rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-mh-gold">
+                                <option value="0">无 (0 Pt)</option>
+                                <option value="1">Level 1 (10 Pt)</option>
+                                <option value="2">Level 2 (15 Pt)</option>
+                                <option value="3">Level 3 (20 Pt)</option>
+                                <option value="4">Level 4 (30 Pt)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">武器说明 / 描述 Text</label>
+                        <textarea id="input-desc" rows="2" class="w-full bg-mh-panel border border-mh-border rounded p-2 text-xs text-gray-300 focus:outline-none focus:border-mh-gold" placeholder="输入武器传奇故事或描述...">蕴含着古老龙族力量的传奇巨刃，斩击时空气中泛起金色雷光。</textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Real-time Balance Engine & Equipment Card (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- Balance Status Gauge Card -->
+                <div class="bg-mh-card border border-mh-border rounded-lg p-5 shadow-lg relative overflow-hidden" id="balance-card">
+                    <!-- Top Ribbon Indicator -->
+                    <div id="balance-ribbon" class="absolute top-0 right-0 px-4 py-1 rounded-bl text-xs font-bold uppercase tracking-widest bg-green-600 text-white shadow">
+                        完美平衡
+                    </div>
+
+                    <h2 class="text-md font-bold text-mh-gold uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-scale-balanced mr-2"></i>数值平衡诊断报告
+                    </h2>
+                    <p class="text-xs text-gray-400 mb-4">基准目标：400.0 锻造值 (1:1 物理换算)</p>
+
+                    <!-- Large Budget Number -->
+                    <div class="bg-mh-panel p-4 rounded-lg border border-mh-border mb-4 text-center">
+                        <div class="text-xs text-gray-400 uppercase tracking-widest">最终平衡锻造值消耗 (Forging Value)</div>
+                        <div class="text-3xl font-black font-mono my-1" id="total-budget-display">400.0 / 400.0</div>
+                        <div class="w-full bg-gray-800 h-2.5 rounded-full overflow-hidden mt-2">
+                            <div id="budget-progress-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Budget Breakdown -->
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50">
+                            <span class="text-gray-300">基础物理攻击 (1:1 锻造值)</span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-raw">400.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50">
+                            <span class="text-gray-300">会心率折算 (3% 会心 = 2点锻造值)</span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-affinity">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50">
+                            <span class="text-gray-300">属性值折算 <span id="cost-element-hint" class="text-[10px] text-amber-400">(1属性 = 2点锻造值)</span></span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-element">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50" id="row-cost-phial">
+                            <span class="text-gray-300">武器特化机制占用 <span id="cost-phial-hint" class="text-[10px] text-amber-400">(瓶/炮击/弓箭)</span></span>
+                            <span class="font-mono font-bold text-amber-400" id="cost-phial">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50" id="row-cost-purple">
+                            <span class="text-gray-300">紫斩惩罚 (400额度内 1紫斩=1Pt)</span>
+                            <span class="font-mono font-bold text-purple-400" id="cost-purple">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50" id="row-cost-white">
+                            <span class="text-gray-300">白斩偏离 (超出30部分 1:0.5)</span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-white">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-mh-border/50">
+                            <span class="text-gray-300">镶嵌槽位占用 (开孔:10 / L2:15 / L3:20 / L4:30)</span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-slots">0.0 Pt</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-gray-300">防御力加成占用 (2防御 = 1锻造值)</span>
+                            <span class="font-mono font-bold text-gray-200" id="cost-defense">0.0 Pt</span>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation Message Box -->
+                    <div id="balance-feedback" class="mt-4 p-3 rounded text-xs bg-green-950/40 border border-green-700/60 text-green-300 flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-check text-green-400 mt-0.5"></i>
+                        <span>当前武器完美符合怪物猎人官方数值设计平衡线！</span>
+                    </div>
+                </div>
+
+                <!-- MH Style Equipment Card Preview -->
+                <div class="bg-mh-card border-2 border-mh-gold/80 rounded-lg p-5 shadow-2xl mh-card-shadow relative overflow-hidden" id="weapon-preview-card">
+                    <!-- Watermark background icon -->
+                    <i class="fa-solid fa-dragon text-9xl absolute -bottom-8 -right-8 text-mh-gold/5 pointer-events-none"></i>
+
+                    <!-- Card Header -->
+                    <div class="flex justify-between items-start border-b-2 border-mh-gold/40 pb-3 mb-4">
+                        <div>
+                            <div class="text-[10px] uppercase font-bold tracking-widest text-mh-gold">Guild Equipment Register</div>
+                            <h3 class="text-xl font-mh font-black text-white tracking-wide" id="card-name">黑钢祖龙大剑</h3>
+                            <div class="text-xs text-amber-400/90 font-medium font-mono" id="card-type">大剑 (Great Sword)</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold text-xs" id="card-rarity">RARE 10</span>
+                        </div>
+                    </div>
+
+                    <!-- Weapon Icon & Main Stats Box -->
+                    <div class="grid grid-cols-12 gap-3 mb-4">
+                        <!-- Icon Box -->
+                        <div class="col-span-4 bg-mh-panel border border-mh-border rounded-lg p-3 flex flex-col items-center justify-center text-mh-gold min-h-[100px]">
+                            <i id="card-weapon-icon" class="fa-solid fa-khanda text-4xl mb-1 drop-shadow-md"></i>
+                            <span class="text-[10px] text-gray-400 font-mono" id="card-weapon-type-code">GS</span>
+                        </div>
+                        <!-- Stats Grid -->
+                        <div class="col-span-8 bg-mh-panel border border-mh-border rounded-lg p-3 space-y-1.5 text-xs">
+                            <div class="flex justify-between border-b border-mh-border/40 pb-1">
+                                <span class="text-gray-400">攻击力</span>
+                                <span class="font-bold text-white font-mono text-sm" id="card-attack">400</span>
+                            </div>
+                            <div class="flex justify-between border-b border-mh-border/40 pb-1">
+                                <span class="text-gray-400">会心率</span>
+                                <span class="font-bold text-white font-mono" id="card-affinity">0%</span>
+                            </div>
+                            <div class="flex justify-between border-b border-mh-border/40 pb-1">
+                                <span class="text-gray-400">属性</span>
+                                <span class="font-bold text-amber-300 font-mono" id="card-element">无</span>
+                            </div>
+                            <!-- Card Spec Row (Phial, Shelling, Bow Coating, Kinsect, etc.) -->
+                            <div id="card-phial-row" class="hidden flex justify-between border-b border-mh-border/40 pb-1">
+                                <span class="text-gray-400">特化规格</span>
+                                <span class="font-bold text-purple-300 font-mono text-xs truncate max-w-[130px]" id="card-phial">强属性瓶</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">防御力加成</span>
+                                <span class="font-bold text-blue-300 font-mono" id="card-defense">+0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sharpness Bar Preview on Card (Hidden for Ranged) -->
+                    <div id="card-sharpness-container" class="bg-mh-panel p-2.5 rounded border border-mh-border mb-4">
+                        <div class="text-[10px] text-gray-400 mb-1 flex justify-between">
+                            <span>斩味槽 (Sharpness)</span>
+                            <span class="text-mh-gold font-mono" id="card-sharpness-label">30 白斩</span>
+                        </div>
+                        <div class="h-3.5 w-full bg-black rounded overflow-hidden flex border border-gray-700" id="card-sharpness-bar">
+                            <!-- Injected JS -->
+                        </div>
+                    </div>
+
+                    <!-- Ranged Spec Display Container on Card (Shown for Ranged) -->
+                    <div id="card-ranged-spec-container" class="hidden bg-mh-panel p-2.5 rounded border border-mh-border mb-4 text-xs space-y-1">
+                        <div class="text-[10px] text-amber-400 font-bold mb-1 flex justify-between border-b border-mh-border/40 pb-0.5">
+                            <span>远程武器特化攻击规格</span>
+                            <span id="card-ranged-tag" class="font-mono">BOW SPEC</span>
+                        </div>
+                        <div class="text-gray-300 font-mono text-[11px] leading-snug" id="card-ranged-details">
+                            曲射: 回复型 | 箭矢: C1:连射2 | C2:连射3 | C3:连射4 | C4:禁用
+                        </div>
+                    </div>
+
+                    <!-- Slots Preview on Card -->
+                    <div class="bg-mh-panel p-2.5 rounded border border-mh-border mb-4 flex items-center justify-between">
+                        <span class="text-xs text-gray-400">镶嵌槽 (Slots):</span>
+                        <div class="flex space-x-2" id="card-slots-container">
+                            <!-- Injected Slots -->
+                        </div>
+                    </div>
+
+                    <!-- Description Text -->
+                    <div class="text-[11px] text-gray-400 italic bg-black/40 p-2.5 rounded border border-mh-border/60 leading-relaxed" id="card-description">
+                        蕴含着古老龙族力量的传奇巨刃，斩击时空气中泛起金色雷光。
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Formula Explanation Modal -->
+    <div id="formula-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-mh-card border-2 border-mh-gold rounded-lg max-w-2xl w-full p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button id="btn-close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-lg font-bold text-mh-gold border-b border-mh-border pb-2 flex items-center">
+                <i class="fa-solid fa-calculator mr-2"></i>怪物猎人武器数值平衡演算逻辑
+            </h3>
+
+            <div class="space-y-3 text-xs leading-relaxed text-gray-300">
+                <div class="bg-mh-panel p-3 rounded border border-mh-border">
+                    <h4 class="font-bold text-white mb-1 text-sm">1. 官方基准模版 (Baseline)</h4>
+                    <p>工坊以标准满级武器为计算模型：</p>
+                    <ul class="list-disc list-inside mt-1 text-amber-300 space-y-0.5 font-mono">
+                        <li>基准平衡上限: 400.0 锻造值</li>
+                        <li>基础物理攻击力 (RAW): 400 (锻造值比例 1:1)</li>
+                        <li>近战斩味: 50红/50橙/50黄/100绿/70蓝/30白斩 (超出 400~450 区间免扣除)</li>
+                        <li>远程武器 (弓、轻弩、重弩): 免除斩味消耗</li>
+                    </ul>
+                </div>
+
+                <div class="bg-mh-panel p-3 rounded border border-mh-border">
+                    <h4 class="font-bold text-white mb-1 text-sm">2. 核心比例关系 (属性 : 攻击 : 会心 = 1 : 2 : 3)</h4>
+                    <p>在平衡体系中，数值兑换关系如下：</p>
+                    <ul class="list-disc list-inside mt-1 space-y-1">
+                        <li><b class="text-mh-gold">1 点属性值</b> 等价于 <b class="text-mh-gold">2 点锻造值</b>。</li>
+                        <li><b class="text-mh-gold">3% 会心率</b> 等价于 <b class="text-mh-gold">2 点锻造值</b>。</li>
+                        <li><strong>攻击比例:</strong> 1 点攻击力 = 1 点锻造值 (1:1)。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-mh-panel p-3 rounded border border-mh-border">
+                    <h4 class="font-bold text-amber-400 mb-1 text-sm">3. 操虫棍与弓箭最新平衡规则</h4>
+                    <ul class="list-disc list-inside mt-1 space-y-1">
+                        <li><b>操虫棍:</b> 猎虫等级范围为 1~15，默认 14 级 (0Pt)。提升至 15 级消耗 10Pt，14 级以下每降低 1 级返还 10Pt 预算。</li>
+                        <li><b>弓箭瓶装填:</b> 接击瓶免费，强击、强属性、毒、麻、眠、爆、减气瓶基础装填各 5Pt；各瓶可独立开启 <b>[+级强化]</b>，额外消耗 15Pt。</li>
+                        <li><b>弓箭箭种与蓄力:</b> 蓄力 1~4 级可任意搭配箭种（连射/贯通/扩散/重射），箭种等级采用数字框输入，消耗 = <b class="text-amber-300 font-mono">(箭种等级 - 蓄力等级 - 1) * 5</b>。</li>
+                        <li><b>蓄力 Level 4 禁用:</b> 仅第 4 级蓄力攻击可选择禁用，禁用后返还 <b>20 点</b> 锻造值预算。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-mh-panel p-3 rounded border border-mh-border">
+                    <h4 class="font-bold text-purple-400 mb-1 text-sm">4. 近战紫斩惩罚机制 (1 : 1 扣除)</h4>
+                    <p class="mt-1 font-mono text-purple-300 font-bold">每 1 点紫斩长度，扣除 1 点锻造值 (1紫斩 = -1锻造值)。远程武器免除。</p>
+                </div>
+            </div>
+
+            <div class="text-right pt-2 border-t border-mh-border">
+                <button id="btn-close-modal-2" class="px-4 py-1.5 rounded bg-mh-gold text-mh-bg font-bold text-xs hover:brightness-110">了解并返回工坊</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEAPON_TYPES = {
+            GreatSword: { name: '大剑', code: 'GS', icon: 'fa-solid fa-khanda', ranged: false },
+            LongSword: { name: '太刀', code: 'LS', icon: 'fa-solid fa-wand-sparkles', ranged: false },
+            SwordAndShield: { name: '片手剑', code: 'SnS', icon: 'fa-solid fa-shield-halved', ranged: false },
+            DualBlades: { name: '双刀', code: 'DB', icon: 'fa-solid fa-scissors', ranged: false },
+            Hammer: { name: '大锤', code: 'Hammer', icon: 'fa-solid fa-gavel', ranged: false },
+            HuntingHorn: { name: '狩猎笛', code: 'HH', icon: 'fa-solid fa-music', ranged: false },
+            Lance: { name: '长枪', code: 'Lance', icon: 'fa-solid fa-location-arrow', ranged: false },
+            Gunlance: { name: '铳枪', code: 'GL', icon: 'fa-solid fa-crosshairs', ranged: false },
+            SwitchAxe: { name: '斩击斧', code: 'SA', icon: 'fa-solid fa-hatchet', ranged: false },
+            ChargeBlade: { name: '盾斧', code: 'CB', icon: 'fa-solid fa-shield', ranged: false },
+            InsectGlaive: { name: '操虫棍', code: 'IG', icon: 'fa-solid fa-feather', ranged: false },
+            LightBowgun: { name: '轻弩炮', code: 'LBG', icon: 'fa-solid fa-gun', ranged: true },
+            HeavyBowgun: { name: '重弩炮', code: 'HBG', icon: 'fa-solid fa-bullseye', ranged: true },
+            Bow: { name: '弓', code: 'Bow', icon: 'fa-solid fa-bow-arrow', ranged: true }
+        };
+
+        const PHIAL_OPTIONS = {
+            SwitchAxe: [
+                { value: 'Power', name: '强化瓶 (Power Phial)', isCustom: false, text: '强化瓶' },
+                { value: 'Element', name: '强属性瓶 (Element Phial)', isCustom: false, text: '强属性瓶' },
+                { value: 'Dragon', name: '灭龙瓶 (Dragon Phial)', isCustom: true, text: '灭龙瓶' },
+                { value: 'Poison', name: '毒瓶 (Poison Phial)', isCustom: true, text: '毒瓶' },
+                { value: 'Para', name: '麻痹瓶 (Paralysis Phial)', isCustom: true, text: '麻痹瓶' },
+                { value: 'Exhaust', name: '减气瓶 (Exhaust Phial)', isCustom: true, text: '减气瓶' }
+            ],
+            ChargeBlade: [
+                { value: 'Impact', name: '榴弹瓶 (Impact Phial)', isCustom: false, text: '榴弹瓶' },
+                { value: 'Element', name: '强属性瓶 (Element Phial)', isCustom: false, text: '强属性瓶' }
+            ]
+        };
+
+        const COATING_LIST = [
+            { id: 'power', name: '强击瓶', color: 'text-amber-400' },
+            { id: 'element', name: '强属性瓶', color: 'text-cyan-300' },
+            { id: 'close', name: '接击瓶', color: 'text-gray-300', isFree: true },
+            { id: 'poison', name: '毒瓶', color: 'text-purple-300' },
+            { id: 'para', name: '麻痹瓶', color: 'text-yellow-300' },
+            { id: 'sleep', name: '睡眠瓶', color: 'text-blue-300' },
+            { id: 'blast', name: '爆破瓶', color: 'text-orange-400' },
+            { id: 'exhaust', name: '减气瓶', color: 'text-gray-400' }
+        ];
+
+        const PRESETS = {
+            baseline: {
+                name: "黑钢祖龙大剑",
+                type: "GreatSword",
+                attack: 400,
+                affinity: 0,
+                elementType: "None",
+                elementVal: 0,
+                sharpness: { red: 50, orange: 50, yellow: 50, green: 100, blue: 70, white: 30, purple: 0 },
+                slots: [0, 0, 0],
+                defense: 0,
+                phialType: "Power",
+                phialValue: 20
+            },
+            "raw-heavy": {
+                name: "轰龙大剑【王虎】",
+                type: "GreatSword",
+                attack: 380,
+                affinity: -15,
+                elementType: "None",
+                elementVal: 0,
+                sharpness: { red: 50, orange: 50, yellow: 50, green: 100, blue: 90, white: 0, purple: 0 },
+                slots: [1, 0, 0],
+                defense: 0,
+                phialType: "Power",
+                phialValue: 20
+            },
+            "purple-meta": {
+                name: "迅龙利刃【暗夜】",
+                type: "LongSword",
+                attack: 260,
+                affinity: 15,
+                elementType: "None",
+                elementVal: 0,
+                sharpness: { red: 50, orange: 50, yellow: 50, green: 70, blue: 70, white: 30, purple: 30 },
+                slots: [2, 0, 0],
+                defense: 0,
+                phialType: "Power",
+                phialValue: 20
+            },
+            "bow-element": {
+                name: "海龙日冕神弓",
+                type: "Bow",
+                attack: 330,
+                affinity: 0,
+                elementType: "Thunder",
+                elementVal: 30,
+                sharpness: { red: 0, orange: 0, yellow: 0, green: 0, blue: 0, white: 0, purple: 0 },
+                slots: [2, 1, 0],
+                defense: 0,
+                kinsectLevel: 14,
+                coatings: {
+                    power: { equipped: true, plus: true },
+                    element: { equipped: true, plus: true },
+                    close: { equipped: true, plus: false },
+                    poison: { equipped: false, plus: false },
+                    para: { equipped: false, plus: false },
+                    sleep: { equipped: false, plus: false },
+                    blast: { equipped: false, plus: false },
+                    exhaust: { equipped: false, plus: false }
+                },
+                bowCharges: {
+                    1: { type: 'Rapid', level: 2 },
+                    2: { type: 'Rapid', level: 3 },
+                    3: { type: 'Rapid', level: 4 },
+                    4: { type: 'Rapid', level: 5 }
+                },
+                c4Disabled: false
+            }
+        };
+
+        const state = {
+            ...PRESETS.baseline,
+            rarity: 10,
+            description: "蕴含着古老龙族力量的传奇巨刃，斩击时空气中泛起金色雷光。",
+            isDualAffinity: false,
+            negAffinity: -20,
+            posAffinity: 15,
+            isDualElement: false,
+            elementType2: "None",
+            elementVal2: 0,
+            phialType: "Power",
+            phialValue: 20,
+            // Gunlance State
+            shellingType: "Normal",
+            shellingLevel: 8,
+            // Insect Glaive State (Default 14)
+            kinsectLevel: 14,
+            // Bow State
+            arcShotType: "Recovery",
+            c4Disabled: false,
+            bowCharges: {
+                1: { type: 'Rapid', level: 2 },
+                2: { type: 'Rapid', level: 3 },
+                3: { type: 'Rapid', level: 4 },
+                4: { type: 'Rapid', level: 5 }
+            },
+            coatings: {
+                power: { equipped: true, plus: false },
+                element: { equipped: false, plus: false },
+                close: { equipped: true, plus: false },
+                poison: { equipped: false, plus: false },
+                para: { equipped: false, plus: false },
+                sleep: { equipped: false, plus: false },
+                blast: { equipped: false, plus: false },
+                exhaust: { equipped: false, plus: false }
+            },
+            // Bowgun State
+            clusterMode: "Arc",
+            mainAmmo: "Normal 3",
+            rapidFire: "None",
+            specialAmmo: "Sticky"
+        };
+
+        let elements = {};
+
+        function initElements() {
+            elements = {
+                valAttack: document.getElementById('val-attack'),
+                valAffinity: document.getElementById('val-affinity'),
+                valElement: document.getElementById('val-element'),
+                valElement2: document.getElementById('val-element-2'),
+                valShRed: document.getElementById('val-sh-red'),
+                valShOrange: document.getElementById('val-sh-orange'),
+                valShYellow: document.getElementById('val-sh-yellow'),
+                valShGreen: document.getElementById('val-sh-green'),
+                valShBlue: document.getElementById('val-sh-blue'),
+                valShWhite: document.getElementById('val-sh-white'),
+                valShPurple: document.getElementById('val-sh-purple'),
+                sharpnessTotalText: document.getElementById('sharpness-total-text'),
+                sliderElement: document.getElementById('slider-element'),
+                sliderElement2: document.getElementById('slider-element-2'),
+                selectElementType2: document.getElementById('select-element-type-2'),
+                dualElementContainer: document.getElementById('dual-element-container'),
+                toggleDualElementCheckbox: document.getElementById('toggle-dual-element-checkbox'),
+                dualElementControls: document.getElementById('dual-element-controls'),
+                costElementHint: document.getElementById('cost-element-hint'),
+                sharpnessPreviewBar: document.getElementById('sharpness-preview-bar'),
+                cardSharpnessBar: document.getElementById('card-sharpness-bar'),
+                cardSharpnessContainer: document.getElementById('card-sharpness-container'),
+                cardRangedSpecContainer: document.getElementById('card-ranged-spec-container'),
+                cardRangedTag: document.getElementById('card-ranged-tag'),
+                cardRangedDetails: document.getElementById('card-ranged-details'),
+                cardName: document.getElementById('card-name'),
+                cardType: document.getElementById('card-type'),
+                weaponTypeDisplay: document.getElementById('weapon-type-display'),
+                cardRarity: document.getElementById('card-rarity'),
+                cardWeaponIcon: document.getElementById('card-weapon-icon'),
+                cardWeaponTypeCode: document.getElementById('card-weapon-type-code'),
+                cardAttack: document.getElementById('card-attack'),
+                cardAffinity: document.getElementById('card-affinity'),
+                cardElement: document.getElementById('card-element'),
+                cardDefense: document.getElementById('card-defense'),
+                cardDescription: document.getElementById('card-description'),
+                cardSharpnessLabel: document.getElementById('card-sharpness-label'),
+                cardSlotsContainer: document.getElementById('card-slots-container'),
+                totalBudgetDisplay: document.getElementById('total-budget-display'),
+                costRaw: document.getElementById('cost-raw'),
+                costAffinity: document.getElementById('cost-affinity'),
+                costElement: document.getElementById('cost-element'),
+                costPurple: document.getElementById('cost-purple'),
+                costWhite: document.getElementById('cost-white'),
+                rowCostPurple: document.getElementById('row-cost-purple'),
+                rowCostWhite: document.getElementById('row-cost-white'),
+                costSlots: document.getElementById('cost-slots'),
+                costDefense: document.getElementById('cost-defense'),
+                budgetProgressBar: document.getElementById('budget-progress-bar'),
+                balanceRibbon: document.getElementById('balance-ribbon'),
+                balanceFeedback: document.getElementById('balance-feedback'),
+                shRed: document.getElementById('slider-sh-red'),
+                shOrange: document.getElementById('slider-sh-orange'),
+                shYellow: document.getElementById('slider-sh-yellow'),
+                shGreen: document.getElementById('slider-sh-green'),
+                shBlue: document.getElementById('slider-sh-blue'),
+                shWhite: document.getElementById('slider-sh-white'),
+                shPurple: document.getElementById('slider-sh-purple'),
+                inputName: document.getElementById('input-name'),
+                selectType: document.getElementById('select-type'),
+                selectRarity: document.getElementById('select-rarity'),
+                inputDefense: document.getElementById('input-defense'),
+                sliderAttack: document.getElementById('slider-attack'),
+                sliderAffinity: document.getElementById('slider-affinity'),
+                selectElementType: document.getElementById('select-element-type'),
+                slot1: document.getElementById('select-slot-1'),
+                slot2: document.getElementById('select-slot-2'),
+                slot3: document.getElementById('select-slot-3'),
+                inputDesc: document.getElementById('input-desc'),
+
+                btnToggleDualAffinity: document.getElementById('btn-toggle-dual-affinity'),
+                panelDualAffinity: document.getElementById('panel-dual-affinity'),
+                iconDualChevron: document.getElementById('icon-dual-chevron'),
+                toggleDualAffinityCheckbox: document.getElementById('toggle-dual-affinity-checkbox'),
+                dualAffinityControls: document.getElementById('dual-affinity-controls'),
+                badgeDualActive: document.getElementById('badge-dual-active'),
+                sliderNegAffinity: document.getElementById('slider-neg-affinity'),
+                sliderPosAffinity: document.getElementById('slider-pos-affinity'),
+                valNegAffinity: document.getElementById('val-neg-affinity'),
+                valPosAffinity: document.getElementById('val-pos-affinity'),
+                valOvercomeAffinity: document.getElementById('val-overcome-affinity'),
+
+                phialTypeContainer: document.getElementById('phial-type-container'),
+                phialLabelTitle: document.getElementById('phial-label-title'),
+                selectPhialType: document.getElementById('select-phial-type'),
+                phialValueContainer: document.getElementById('phial-value-container'),
+                valPhialValue: document.getElementById('val-phial-value'),
+                sliderPhialValue: document.getElementById('slider-phial-value'),
+                phialDescHint: document.getElementById('phial-desc-hint'),
+                costPhial: document.getElementById('cost-phial'),
+                costPhialHint: document.getElementById('cost-phial-hint'),
+                rowCostPhial: document.getElementById('row-cost-phial'),
+                cardPhialRow: document.getElementById('card-phial-row'),
+                cardPhial: document.getElementById('card-phial'),
+
+                gunlanceContainer: document.getElementById('gunlance-container'),
+                selectShellingType: document.getElementById('select-shelling-type'),
+                selectShellingLevel: document.getElementById('select-shelling-level'),
+
+                kinsectContainer: document.getElementById('kinsect-container'),
+                selectKinsectLevel: document.getElementById('select-kinsect-level'),
+
+                bowContainer: document.getElementById('bow-container'),
+                selectArcShot: document.getElementById('select-arc-shot'),
+                bowCoatingsGrid: document.getElementById('bow-coatings-grid'),
+
+                meleeSharpnessPanel: document.getElementById('melee-sharpness-panel'),
+                bowChargePanel: document.getElementById('bow-charge-panel'),
+                bowgunAmmoPanel: document.getElementById('bowgun-ammo-panel'),
+
+                selectBowType1: document.getElementById('select-bow-type-1'),
+                inputBowLvl1: document.getElementById('input-bow-lvl-1'),
+                costBowC1: document.getElementById('cost-bow-c1'),
+
+                selectBowType2: document.getElementById('select-bow-type-2'),
+                inputBowLvl2: document.getElementById('input-bow-lvl-2'),
+                costBowC2: document.getElementById('cost-bow-c2'),
+
+                selectBowType3: document.getElementById('select-bow-type-3'),
+                inputBowLvl3: document.getElementById('input-bow-lvl-3'),
+                costBowC3: document.getElementById('cost-bow-c3'),
+
+                selectBowType4: document.getElementById('select-bow-type-4'),
+                inputBowLvl4: document.getElementById('input-bow-lvl-4'),
+                costBowC4: document.getElementById('cost-bow-c4'),
+                chkDisableC4: document.getElementById('chk-disable-c4'),
+                controlsBowC4: document.getElementById('controls-bow-c4'),
+
+                selectClusterMode: document.getElementById('select-cluster-mode'),
+                selectMainAmmo: document.getElementById('select-main-ammo'),
+                selectRapidFire: document.getElementById('select-rapid-fire'),
+                selectSpecialAmmo: document.getElementById('select-special-ammo')
+            };
+        }
+
+        function populateKinsectOptions() {
+            if (!elements.selectKinsectLevel) return;
+            elements.selectKinsectLevel.innerHTML = '';
+            for (let i = 1; i <= 15; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                let costText = '';
+                if (i === 14) costText = ' (默认基准 0 Pt)';
+                else if (i === 15) costText = ' (消耗 10.0 Pt)';
+                else {
+                    const refund = (14 - i) * 10;
+                    costText = ` (返还 ${refund}.0 Pt)`;
+                }
+                opt.textContent = `Kinsect Level ${i}${costText}`;
+                if (i === state.kinsectLevel) opt.selected = true;
+                elements.selectKinsectLevel.appendChild(opt);
+            }
+        }
+
+        function renderBowCoatingsUI() {
+            if (!elements.bowCoatingsGrid) return;
+            elements.bowCoatingsGrid.innerHTML = '';
+
+            COATING_LIST.forEach(item => {
+                const cState = state.coatings[item.id] || { equipped: false, plus: false };
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bg-black/30 p-1.5 rounded flex items-center justify-between border border-mh-border/40';
+
+                if (item.isFree) {
+                    wrapper.innerHTML = `
+                        <label class="flex items-center space-x-1.5 cursor-pointer">
+                            <input type="checkbox" checked disabled class="accent-amber-500 rounded">
+                            <span class="${item.color} font-medium">${item.name} (自带)</span>
+                        </label>
+                        <span class="text-[10px] text-gray-500">0 Pt</span>
+                    `;
+                } else {
+                    const isChecked = cState.equipped ? 'checked' : '';
+                    const isPlusChecked = cState.plus ? 'checked' : '';
+                    const plusDisabled = !cState.equipped ? 'disabled' : '';
+
+                    wrapper.innerHTML = `
+                        <label class="flex items-center space-x-1.5 cursor-pointer">
+                            <input type="checkbox" data-coating-equip="${item.id}" ${isChecked} class="accent-amber-500 rounded">
+                            <span class="${item.color} font-medium">${item.name} (5Pt)</span>
+                        </label>
+                        <label class="flex items-center space-x-1 text-[11px] cursor-pointer ${!cState.equipped ? 'opacity-40' : ''}">
+                            <input type="checkbox" data-coating-plus="${item.id}" ${isPlusChecked} ${plusDisabled} class="accent-amber-500 rounded">
+                            <span class="text-amber-400 font-bold">+级 (+15Pt)</span>
+                        </label>
+                    `;
+                }
+                elements.bowCoatingsGrid.appendChild(wrapper);
+            });
+
+            // Bind events to newly created coating inputs
+            elements.bowCoatingsGrid.querySelectorAll('[data-coating-equip]').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const id = e.target.getAttribute('data-coating-equip');
+                    if (state.coatings[id]) {
+                        state.coatings[id].equipped = e.target.checked;
+                        if (!e.target.checked) state.coatings[id].plus = false;
+                    }
+                    updateUI();
+                });
+            });
+
+            elements.bowCoatingsGrid.querySelectorAll('[data-coating-plus]').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const id = e.target.getAttribute('data-coating-plus');
+                    if (state.coatings[id]) {
+                        state.coatings[id].plus = e.target.checked;
+                    }
+                    updateUI();
+                });
+            });
+        }
+
+        function updateWeaponSpecificUI() {
+            const weaponType = state.type;
+            const wInfo = WEAPON_TYPES[weaponType] || WEAPON_TYPES.GreatSword;
+
+            elements.phialTypeContainer.classList.add('hidden');
+            elements.gunlanceContainer.classList.add('hidden');
+            elements.kinsectContainer.classList.add('hidden');
+            elements.bowContainer.classList.add('hidden');
+            elements.rowCostPhial.classList.add('hidden');
+            elements.cardPhialRow.classList.add('hidden');
+
+            elements.meleeSharpnessPanel.classList.add('hidden');
+            elements.bowChargePanel.classList.add('hidden');
+            elements.bowgunAmmoPanel.classList.add('hidden');
+
+            elements.rowCostPurple.classList.remove('hidden');
+            elements.rowCostWhite.classList.remove('hidden');
+            elements.cardSharpnessContainer.classList.remove('hidden');
+            elements.cardRangedSpecContainer.classList.add('hidden');
+
+            if (wInfo.ranged) {
+                elements.rowCostPurple.classList.add('hidden');
+                elements.rowCostWhite.classList.add('hidden');
+                elements.cardSharpnessContainer.classList.add('hidden');
+                elements.cardRangedSpecContainer.classList.remove('hidden');
+
+                if (weaponType === 'Bow') {
+                    elements.bowChargePanel.classList.remove('hidden');
+                    elements.bowContainer.classList.remove('hidden');
+                    elements.rowCostPhial.classList.remove('hidden');
+                    elements.cardPhialRow.classList.remove('hidden');
+
+                    const arcNames = { Recovery: '回复', Affinity: '会心', Stun: '冲角' };
+                    elements.cardPhialRow.querySelector('span:first-child').textContent = '曲射 / 瓶';
+                    
+                    let activeCoatings = ['接击'];
+                    COATING_LIST.forEach(item => {
+                        if (item.isFree) return;
+                        const c = state.coatings[item.id];
+                        if (c && c.equipped) {
+                            activeCoatings.push(item.name.replace('瓶', '') + (c.plus ? '+' : ''));
+                        }
+                    });
+
+                    elements.cardPhial.textContent = `${arcNames[state.arcShotType]}曲射 | ${activeCoatings.join('/')}`;
+                    elements.costPhialHint.textContent = '(弓瓶与蓄力阶段加算)';
+
+                    elements.cardRangedTag.textContent = 'BOW CHARGE SHOTS';
+                    const typeNames = { Rapid: '连射', Pierce: '贯通', Spread: '扩散', Heavy: '重射' };
+                    
+                    let chargeStr = `C1:${typeNames[state.bowCharges[1].type]}${state.bowCharges[1].level} | C2:${typeNames[state.bowCharges[2].type]}${state.bowCharges[2].level} | C3:${typeNames[state.bowCharges[3].type]}${state.bowCharges[3].level}`;
+                    if (state.c4Disabled) {
+                        chargeStr += ` | C4:禁用(+20Pt)`;
+                    } else {
+                        chargeStr += ` | C4:${typeNames[state.bowCharges[4].type]}${state.bowCharges[4].level}`;
+                    }
+                    elements.cardRangedDetails.textContent = chargeStr;
+
+                } else if (weaponType === 'LightBowgun' || weaponType === 'HeavyBowgun') {
+                    elements.bowgunAmmoPanel.classList.remove('hidden');
+                    elements.rowCostPhial.classList.remove('hidden');
+                    elements.cardPhialRow.classList.remove('hidden');
+
+                    const clusterText = { Arc: '抛物线弧线', Straight: '直射/平射', Disabled: '无扩散弹' };
+                    elements.cardPhialRow.querySelector('span:first-child').textContent = '扩散弹/速射';
+                    elements.cardPhial.textContent = `${clusterText[state.clusterMode]} | ${state.rapidFire === 'None' ? '常规' : state.rapidFire}`;
+                    elements.costPhialHint.textContent = '(弩炮弹药/速射特化)';
+
+                    elements.cardRangedTag.textContent = weaponType === 'LightBowgun' ? 'LBG AMMO SPEC' : 'HBG AMMO SPEC';
+                    elements.cardRangedDetails.textContent = `主打:${state.mainAmmo} | 特殊:${state.specialAmmo} | 扩散:${clusterText[state.clusterMode]}`;
+                }
+            } else {
+                // Melee Weapons
+                elements.meleeSharpnessPanel.classList.remove('hidden');
+
+                if (weaponType === 'SwitchAxe' || weaponType === 'ChargeBlade') {
+                    updatePhialSelectOptions();
+                } else if (weaponType === 'Gunlance') {
+                    elements.gunlanceContainer.classList.remove('hidden');
+                    elements.rowCostPhial.classList.remove('hidden');
+                    elements.cardPhialRow.classList.remove('hidden');
+
+                    const shellingNames = { Normal: '通常型', Long: '放射型', Wide: '扩散型' };
+                    elements.cardPhialRow.querySelector('span:first-child').textContent = '炮击规格';
+                    elements.cardPhial.textContent = `${shellingNames[state.shellingType]} Lv.${state.shellingLevel}`;
+                    
+                    if (state.shellingLevel == 8) {
+                        elements.costPhialHint.textContent = '(炮击升级 Lv.8 +10.0Pt)';
+                    } else {
+                        elements.costPhialHint.textContent = `(炮击 Lv.${state.shellingLevel} 0Pt)`;
+                    }
+                } else if (weaponType === 'InsectGlaive') {
+                    elements.kinsectContainer.classList.remove('hidden');
+                    elements.rowCostPhial.classList.remove('hidden');
+                    elements.cardPhialRow.classList.remove('hidden');
+
+                    elements.cardPhialRow.querySelector('span:first-child').textContent = '猎虫等级';
+                    elements.cardPhial.textContent = `Kinsect Lv.${state.kinsectLevel}`;
+                    
+                    const kDelta = (state.kinsectLevel - 14) * 10;
+                    if (kDelta > 0) {
+                        elements.costPhialHint.textContent = `(猎虫 Lv.15 +${kDelta}.0Pt)`;
+                    } else if (kDelta < 0) {
+                        elements.costPhialHint.textContent = `(猎虫 Lv.${state.kinsectLevel} 返还 ${Math.abs(kDelta)}.0Pt)`;
+                    } else {
+                        elements.costPhialHint.textContent = `(猎虫 Lv.14 基准 0Pt)`;
+                    }
+                }
+            }
+        }
+
+        function updatePhialSelectOptions() {
+            if (!elements.selectPhialType) return;
+
+            const weaponType = state.type;
+            const options = PHIAL_OPTIONS[weaponType];
+            if (!options) return;
+
+            elements.phialTypeContainer.classList.remove('hidden');
+            elements.rowCostPhial.classList.remove('hidden');
+            elements.cardPhialRow.classList.remove('hidden');
+            elements.cardPhialRow.querySelector('span:first-child').textContent = '瓶类型';
+
+            if (weaponType === 'SwitchAxe') {
+                elements.phialLabelTitle.textContent = '斩击斧瓶类型 (Switch Axe Phial)';
+                elements.phialDescHint.textContent = '强化瓶为标准基准(0耗)，强属性瓶为10点固定占用，特殊瓶每1点数值占用2锻造值。';
+            } else if (weaponType === 'ChargeBlade') {
+                elements.phialLabelTitle.textContent = '盾斧瓶类型 (Charge Blade Phial)';
+                elements.phialDescHint.textContent = '榴弹瓶为标准基准(0耗)，强属性瓶计入 +10 锻造值。';
+            }
+
+            elements.selectPhialType.innerHTML = '';
+            let validSelected = false;
+
+            options.forEach(opt => {
+                const optionEl = document.createElement('option');
+                optionEl.value = opt.value;
+                optionEl.textContent = opt.name;
+                if (state.phialType === opt.value) {
+                    optionEl.selected = true;
+                    validSelected = true;
+                }
+                elements.selectPhialType.appendChild(optionEl);
+            });
+
+            if (!validSelected && options.length > 0) {
+                state.phialType = options[0].value;
+                elements.selectPhialType.value = options[0].value;
+            }
+
+            const currentOption = options.find(o => o.value === state.phialType);
+            if (weaponType === 'SwitchAxe' && currentOption && currentOption.isCustom) {
+                elements.phialValueContainer.classList.remove('hidden');
+                elements.valPhialValue.textContent = state.phialValue;
+                elements.sliderPhialValue.value = state.phialValue;
+                elements.costPhialHint.textContent = `(${currentOption.text} ${state.phialValue} x 2Pt)`;
+            } else {
+                elements.phialValueContainer.classList.add('hidden');
+                if (state.phialType === 'Element') {
+                    elements.costPhialHint.textContent = '(强属性瓶特化 +10Pt)';
+                } else {
+                    elements.costPhialHint.textContent = '(标准通用瓶 0Pt)';
+                }
+            }
+        }
+
+        function calculateBalance() {
+            const targetBudget = 400.0;
+            const rawCost = state.attack * 1.0;
+            const wInfo = WEAPON_TYPES[state.type] || WEAPON_TYPES.GreatSword;
+            
+            let effectiveAffinityVal = state.affinity;
+            if (state.isDualAffinity) {
+                effectiveAffinityVal = state.negAffinity + state.posAffinity;
+            }
+            const affinityCost = effectiveAffinityVal * (2.0 / 3.0);
+            
+            let elementCost = 0;
+            const isDualBladesDualElement = (state.type === 'DualBlades' && state.isDualElement);
+
+            if (isDualBladesDualElement) {
+                const val1 = (state.elementType !== 'None') ? state.elementVal : 0;
+                const val2 = (state.elementType2 !== 'None') ? state.elementVal2 : 0;
+                elementCost = (val1 + val2) * 1.0;
+            } else {
+                elementCost = (state.elementType !== 'None') ? (state.elementVal * 2.0) : 0;
+            }
+
+            let phialCost = 0;
+            if (state.type === 'SwitchAxe') {
+                const list = PHIAL_OPTIONS.SwitchAxe || [];
+                const currentOpt = list.find(o => o.value === state.phialType);
+                if (currentOpt) {
+                    if (currentOpt.isCustom) phialCost = state.phialValue * 2.0;
+                    else if (state.phialType === 'Element') phialCost = 10.0;
+                }
+            } else if (state.type === 'ChargeBlade') {
+                if (state.phialType === 'Element') phialCost = 10.0;
+            } else if (state.type === 'Gunlance') {
+                if (state.shellingLevel == 8) phialCost = 10.0;
+            } else if (state.type === 'InsectGlaive') {
+                // Kinsect Level 1-15: Default 14, Lv15 costs +10Pt, below 14 yields -10Pt/lvl
+                phialCost = (state.kinsectLevel - 14) * 10.0;
+            } else if (state.type === 'Bow') {
+                // Bow Coating Calculations
+                COATING_LIST.forEach(item => {
+                    if (item.isFree) return;
+                    const c = state.coatings[item.id];
+                    if (c && c.equipped) {
+                        phialCost += 5.0; // 5Pt base
+                        if (c.plus) phialCost += 15.0; // +15Pt for Plus Upgrade
+                    }
+                });
+
+                // Bow Charge Shot Calculations: (Arrow Level - Charge Level - 1) * 5
+                for (let lvl = 1; lvl <= 3; lvl++) {
+                    const cObj = state.bowCharges[lvl];
+                    if (cObj) {
+                        phialCost += (cObj.level - lvl - 1) * 5.0;
+                    }
+                }
+
+                // Bow Charge Level 4
+                if (state.c4Disabled) {
+                    phialCost -= 20.0; // Disable C4 -> +20Pt Budget Gain (-20 Cost)
+                } else {
+                    const c4Obj = state.bowCharges[4];
+                    if (c4Obj) {
+                        phialCost += (c4Obj.level - 4 - 1) * 5.0;
+                    }
+                }
+
+            } else if (state.type === 'LightBowgun' || state.type === 'HeavyBowgun') {
+                if (state.rapidFire === 'Normal2') phialCost += 2.0;
+                if (state.rapidFire === 'Pierce2') phialCost += 3.0;
+                if (state.rapidFire === 'Elemental') phialCost += 4.0;
+                if (state.specialAmmo === 'Slicing') phialCost += 2.0;
+            }
+
+            let purpleCost = 0;
+            let whiteCost = 0;
+            let shBreakdown = { effective: { purple: 0, white: 0 } };
+
+            if (!wInfo.ranged) {
+                shBreakdown = calculateSharpnessBreakdown(state.sharpness, 400);
+                purpleCost = shBreakdown.effective.purple * 1.0;
+                whiteCost = (shBreakdown.effective.white - 30) * 0.5;
+            }
+
+            const slotCostTable = [0, 10, 15, 20, 30];
+            const slotsCost = state.slots.reduce((acc, lvl) => acc + slotCostTable[lvl], 0);
+            const defenseCost = state.defense * 0.5;
+
+            const totalBudget = rawCost + affinityCost + elementCost + phialCost + purpleCost + whiteCost + slotsCost + defenseCost;
+            const delta = totalBudget - targetBudget;
+
+            return {
+                targetBudget,
+                totalBudget,
+                delta,
+                rawCost,
+                affinityCost,
+                elementCost,
+                phialCost,
+                purpleCost,
+                whiteCost,
+                slotsCost,
+                defenseCost,
+                shBreakdown,
+                effectiveAffinityVal,
+                isDualBladesDualElement
+            };
+        }
+
+        function calculateSharpnessBreakdown(sharpness, baselineLimit = 400) {
+            const order = ['red', 'orange', 'yellow', 'green', 'blue', 'white', 'purple'];
+            let accumulated = 0;
+            const effective = { red: 0, orange: 0, yellow: 0, green: 0, blue: 0, white: 0, purple: 0 };
+            const free = { red: 0, orange: 0, yellow: 0, green: 0, blue: 0, white: 0, purple: 0 };
+
+            order.forEach(color => {
+                const val = sharpness[color] || 0;
+                if (val <= 0) return;
+
+                const start = accumulated;
+                const end = accumulated + val;
+                accumulated = end;
+
+                if (end <= baselineLimit) {
+                    effective[color] = val;
+                } else if (start >= baselineLimit) {
+                    free[color] = val;
+                } else {
+                    effective[color] = baselineLimit - start;
+                    free[color] = end - baselineLimit;
+                }
+            });
+
+            return { effective, free, total: accumulated };
+        }
+
+        function renderSharpnessBar(containerEl, sharpnessObj, total, maxGauge = 450) {
+            if (!containerEl) return;
+            containerEl.innerHTML = '';
+            containerEl.classList.add('relative');
+
+            const shColors = [
+                { key: 'red', bg: 'bg-red-600' },
+                { key: 'orange', bg: 'bg-orange-500' },
+                { key: 'yellow', bg: 'bg-yellow-400' },
+                { key: 'green', bg: 'bg-green-500' },
+                { key: 'blue', bg: 'bg-blue-500' },
+                { key: 'white', bg: 'bg-slate-100' },
+                { key: 'purple', bg: 'bg-purple-600' }
+            ];
+
+            shColors.forEach(c => {
+                const val = sharpnessObj[c.key] || 0;
+                if (val > 0) {
+                    const pct = (val / maxGauge) * 100;
+                    const seg = document.createElement('div');
+                    seg.className = `h-full ${c.bg} sharpness-bar-segment`;
+                    seg.style.width = `${pct}%`;
+                    seg.title = `${c.key}: ${val}`;
+                    containerEl.appendChild(seg);
+                }
+            });
+
+            const markerLine = document.createElement('div');
+            markerLine.className = 'absolute top-0 bottom-0 w-0.5 bg-amber-400 z-10 pointer-events-none shadow-[0_0_6px_#f59e0b]';
+            markerLine.style.left = `${(400 / maxGauge) * 100}%`;
+            markerLine.title = '400 锻造额度基准线';
+            containerEl.appendChild(markerLine);
+        }
+
+        function renderCardSlots() {
+            if (!elements.cardSlotsContainer) return;
+            elements.cardSlotsContainer.innerHTML = '';
+            state.slots.forEach(lvl => {
+                const slotEl = document.createElement('div');
+                if (lvl === 0) {
+                    slotEl.className = 'w-6 h-6 rounded border border-gray-600 flex items-center justify-center text-[10px] text-gray-500 font-mono';
+                    slotEl.textContent = '-';
+                } else {
+                    slotEl.className = 'w-6 h-6 rounded bg-mh-gold/20 border border-mh-gold flex items-center justify-center text-xs font-bold text-mh-gold font-mono shadow-sm';
+                    slotEl.textContent = lvl;
+                }
+                elements.cardSlotsContainer.appendChild(slotEl);
+            });
+        }
+
+        function renderBalanceReport(report) {
+            if (!elements.totalBudgetDisplay) return;
+
+            elements.totalBudgetDisplay.textContent = `${report.totalBudget.toFixed(1)} / ${report.targetBudget.toFixed(1)}`;
+            elements.costRaw.textContent = `${report.rawCost.toFixed(1)} Pt`;
+            elements.costAffinity.textContent = `${report.affinityCost.toFixed(1)} Pt`;
+            elements.costElement.textContent = `${report.elementCost.toFixed(1)} Pt`;
+            elements.costPhial.textContent = `${report.phialCost.toFixed(1)} Pt`;
+            elements.costPurple.textContent = `${report.purpleCost.toFixed(1)} Pt`;
+            elements.costWhite.textContent = `${report.whiteCost.toFixed(1)} Pt`;
+            elements.costSlots.textContent = `${report.slotsCost.toFixed(1)} Pt`;
+            elements.costDefense.textContent = `${report.defenseCost.toFixed(1)} Pt`;
+
+            const pct = Math.min((report.totalBudget / report.targetBudget) * 100, 100);
+            elements.budgetProgressBar.style.width = `${pct}%`;
+
+            if (Math.abs(report.delta) <= 2.0) {
+                elements.budgetProgressBar.className = 'h-full bg-green-500 transition-all duration-300';
+                elements.balanceRibbon.className = 'absolute top-0 right-0 px-4 py-1 rounded-bl text-xs font-bold uppercase tracking-widest bg-green-600 text-white shadow';
+                elements.balanceRibbon.textContent = '完美平衡';
+                elements.balanceFeedback.className = 'mt-4 p-3 rounded text-xs bg-green-950/40 border border-green-700/60 text-green-300 flex items-start space-x-2';
+                elements.balanceFeedback.innerHTML = `<i class="fa-solid fa-circle-check text-green-400 mt-0.5"></i><span>当前武器数值完全达到怪物猎人400.0 Pt标准锻造平衡线！</span>`;
+            } else if (report.delta > 2.0) {
+                elements.budgetProgressBar.className = 'h-full bg-red-500 transition-all duration-300';
+                elements.balanceRibbon.className = 'absolute top-0 right-0 px-4 py-1 rounded-bl text-xs font-bold uppercase tracking-widest bg-red-600 text-white shadow';
+                elements.balanceRibbon.textContent = '数值超标';
+                elements.balanceFeedback.className = 'mt-4 p-3 rounded text-xs bg-red-950/40 border border-red-700/60 text-red-300 flex items-start space-x-2';
+                elements.balanceFeedback.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-400 mt-0.5"></i><span>当前锻造值超出标准 ${report.delta.toFixed(1)} 点！请降低部分属性或会心。</span>`;
+            } else {
+                elements.budgetProgressBar.className = 'h-full bg-blue-500 transition-all duration-300';
+                elements.balanceRibbon.className = 'absolute top-0 right-0 px-4 py-1 rounded-bl text-xs font-bold uppercase tracking-widest bg-blue-600 text-white shadow';
+                elements.balanceRibbon.textContent = '还有余量';
+                elements.balanceFeedback.className = 'mt-4 p-3 rounded text-xs bg-blue-950/40 border border-blue-700/60 text-blue-300 flex items-start space-x-2';
+                elements.balanceFeedback.innerHTML = `<i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i><span>当前锻造值还剩余 ${Math.abs(report.delta).toFixed(1)} 点，可继续提升攻击、属性或开启高级孔位。</span>`;
+            }
+        }
+
+        function updateUI() {
+            if (!elements.valAttack) return;
+
+            elements.valAttack.textContent = state.attack;
+
+            renderBowCoatingsUI();
+            updateWeaponSpecificUI();
+
+            if (state.type === 'DualBlades') {
+                elements.dualElementContainer.classList.remove('hidden');
+            } else {
+                elements.dualElementContainer.classList.add('hidden');
+                state.isDualElement = false;
+                elements.toggleDualElementCheckbox.checked = false;
+            }
+
+            if (state.isDualElement && state.type === 'DualBlades') {
+                elements.dualElementControls.classList.remove('hidden');
+                elements.costElementHint.textContent = '(双属性特化 1属性 = 1点锻造值)';
+            } else {
+                elements.dualElementControls.classList.add('hidden');
+                elements.costElementHint.textContent = '(1属性 = 2点锻造值)';
+            }
+
+            if (state.isDualAffinity) {
+                elements.valAffinity.textContent = `${state.negAffinity}% / +${state.posAffinity}% (双会心)`;
+                elements.sliderAffinity.disabled = true;
+                elements.sliderAffinity.parentElement.classList.add('opacity-40');
+                elements.badgeDualActive.classList.remove('hidden');
+                elements.dualAffinityControls.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                elements.valAffinity.textContent = (state.affinity > 0 ? '+' : '') + state.affinity + '%';
+                elements.sliderAffinity.disabled = false;
+                elements.sliderAffinity.parentElement.classList.remove('opacity-40');
+                elements.badgeDualActive.classList.add('hidden');
+                elements.dualAffinityControls.classList.add('opacity-50', 'pointer-events-none');
+            }
+
+            elements.valNegAffinity.textContent = `${state.negAffinity}%`;
+            elements.valPosAffinity.textContent = `+${state.posAffinity}%`;
+            const overcomeVal = Math.abs(state.negAffinity) + state.posAffinity;
+            elements.valOvercomeAffinity.textContent = `+${overcomeVal}%`;
+
+            elements.valElement.textContent = state.elementVal;
+            elements.valElement2.textContent = state.elementVal2;
+
+            elements.valShRed.textContent = state.sharpness.red;
+            elements.valShOrange.textContent = state.sharpness.orange;
+            elements.valShYellow.textContent = state.sharpness.yellow;
+            elements.valShGreen.textContent = state.sharpness.green;
+            elements.valShBlue.textContent = state.sharpness.blue;
+            elements.valShWhite.textContent = state.sharpness.white;
+            elements.valShPurple.textContent = state.sharpness.purple;
+
+            const totalSharpness = Object.values(state.sharpness).reduce((a, b) => a + b, 0);
+            const maxGaugeCapacity = 450;
+            elements.sharpnessTotalText.textContent = `${totalSharpness} / ${maxGaugeCapacity} (400以上免费)`;
+
+            elements.sliderElement.disabled = (state.elementType === 'None');
+            elements.sliderElement2.disabled = (state.elementType2 === 'None');
+
+            renderSharpnessBar(elements.sharpnessPreviewBar, state.sharpness, totalSharpness, maxGaugeCapacity);
+            renderSharpnessBar(elements.cardSharpnessBar, state.sharpness, totalSharpness, maxGaugeCapacity);
+
+            elements.cardName.textContent = state.name || '未命名武器';
+            const wType = WEAPON_TYPES[state.type] || WEAPON_TYPES.GreatSword;
+            elements.cardType.textContent = `${wType.name} (${wType.code})`;
+            elements.weaponTypeDisplay.textContent = `${wType.name} (${wType.code})`;
+            elements.cardRarity.textContent = `RARE ${state.rarity}`;
+            elements.cardWeaponIcon.className = wType.icon + ' text-4xl mb-1 drop-shadow-md';
+            elements.cardWeaponTypeCode.textContent = wType.code;
+
+            elements.cardAttack.textContent = state.attack;
+
+            if (state.isDualAffinity) {
+                elements.cardAffinity.textContent = `${state.negAffinity}% / +${state.posAffinity}%`;
+                elements.cardAffinity.title = `克服狂龙病毒后: +${overcomeVal}%`;
+            } else {
+                elements.cardAffinity.textContent = (state.affinity > 0 ? '+' : '') + state.affinity + '%';
+                elements.cardAffinity.title = '';
+            }
+            
+            const typeNames = {
+                Fire: '火', Water: '水', Thunder: '雷', Ice: '冰', Dragon: '龙',
+                Poison: '毒', Para: '麻', Sleep: '眠', Blast: '爆'
+            };
+
+            if (state.type === 'DualBlades' && state.isDualElement) {
+                let eText = '';
+                if (state.elementType !== 'None' && state.elementVal > 0) {
+                    eText += `${typeNames[state.elementType] || state.elementType} ${state.elementVal}`;
+                }
+                if (state.elementType2 !== 'None' && state.elementVal2 > 0) {
+                    if (eText) eText += ' / ';
+                    eText += `${typeNames[state.elementType2] || state.elementType2} ${state.elementVal2}`;
+                }
+                if (!eText) {
+                    elements.cardElement.textContent = '无';
+                    elements.cardElement.className = 'font-bold text-gray-400 font-mono';
+                } else {
+                    elements.cardElement.textContent = eText;
+                    elements.cardElement.className = 'font-bold text-amber-300 font-mono text-xs';
+                }
+            } else {
+                if (state.elementType === 'None' || state.elementVal === 0) {
+                    elements.cardElement.textContent = '无';
+                    elements.cardElement.className = 'font-bold text-gray-400 font-mono';
+                } else {
+                    elements.cardElement.textContent = `${typeNames[state.elementType] || state.elementType} ${state.elementVal}`;
+                    elements.cardElement.className = 'font-bold text-amber-300 font-mono';
+                }
+            }
+
+            elements.cardDefense.textContent = `+${state.defense}`;
+            elements.cardDescription.textContent = state.description || '暂无说明。';
+
+            // Update Bow Specific Charge Costs UI labels
+            if (state.type === 'Bow') {
+                for (let lvl = 1; lvl <= 3; lvl++) {
+                    const c = state.bowCharges[lvl];
+                    const cost = (c.level - lvl - 1) * 5;
+                    const costLabel = elements[`costBowC${lvl}`];
+                    if (costLabel) {
+                        costLabel.textContent = `${cost >= 0 ? '+' : ''}${cost}.0 Pt`;
+                    }
+                }
+                if (state.c4Disabled) {
+                    elements.costBowC4.textContent = '-20.0 Pt';
+                    elements.controlsBowC4.classList.add('opacity-40', 'pointer-events-none');
+                } else {
+                    const c4 = state.bowCharges[4];
+                    const cost4 = (c4.level - 4 - 1) * 5;
+                    elements.costBowC4.textContent = `${cost4 >= 0 ? '+' : ''}${cost4}.0 Pt`;
+                    elements.controlsBowC4.classList.remove('opacity-40', 'pointer-events-none');
+                }
+            }
+
+            renderCardSlots();
+
+            const report = calculateBalance();
+            renderBalanceReport(report);
+        }
+
+        function bindEvents() {
+            elements.inputName.addEventListener('input', (e) => { state.name = e.target.value; updateUI(); });
+            elements.selectType.addEventListener('change', (e) => { state.type = e.target.value; updateUI(); });
+            elements.selectPhialType.addEventListener('change', (e) => { state.phialType = e.target.value; updateUI(); });
+            elements.sliderPhialValue.addEventListener('input', (e) => { state.phialValue = parseInt(e.target.value) || 0; updateUI(); });
+            
+            elements.selectShellingType.addEventListener('change', (e) => { state.shellingType = e.target.value; updateUI(); });
+            elements.selectShellingLevel.addEventListener('change', (e) => { state.shellingLevel = parseInt(e.target.value); updateUI(); });
+
+            elements.selectKinsectLevel.addEventListener('change', (e) => { state.kinsectLevel = parseInt(e.target.value); updateUI(); });
+
+            // Bow Charge UI Controls
+            elements.selectArcShot.addEventListener('change', (e) => { state.arcShotType = e.target.value; updateUI(); });
+            
+            for (let lvl = 1; lvl <= 4; lvl++) {
+                const selectEl = elements[`selectBowType${lvl}`];
+                const inputEl = elements[`inputBowLvl${lvl}`];
+
+                if (selectEl) {
+                    selectEl.value = state.bowCharges[lvl].type;
+                    selectEl.addEventListener('change', (e) => {
+                        state.bowCharges[lvl].type = e.target.value;
+                        updateUI();
+                    });
+                }
+                if (inputEl) {
+                    inputEl.value = state.bowCharges[lvl].level;
+                    inputEl.addEventListener('input', (e) => {
+                        let val = parseInt(e.target.value) || 1;
+                        if (val < 1) val = 1;
+                        if (val > 10) val = 10;
+                        state.bowCharges[lvl].level = val;
+                        updateUI();
+                    });
+                }
+            }
+
+            elements.chkDisableC4.checked = state.c4Disabled;
+            elements.chkDisableC4.addEventListener('change', (e) => {
+                state.c4Disabled = e.target.checked;
+                updateUI();
+            });
+
+            // Bowgun Controls
+            elements.selectClusterMode.addEventListener('change', (e) => { state.clusterMode = e.target.value; updateUI(); });
+            elements.selectMainAmmo.addEventListener('change', (e) => { state.mainAmmo = e.target.value; updateUI(); });
+            elements.selectRapidFire.addEventListener('change', (e) => { state.rapidFire = e.target.value; updateUI(); });
+            elements.selectSpecialAmmo.addEventListener('change', (e) => { state.specialAmmo = e.target.value; updateUI(); });
+
+            elements.selectRarity.addEventListener('change', (e) => { state.rarity = parseInt(e.target.value); updateUI(); });
+            elements.inputDefense.addEventListener('input', (e) => { state.defense = parseInt(e.target.value) || 0; updateUI(); });
+
+            elements.sliderAttack.addEventListener('input', (e) => { state.attack = parseInt(e.target.value); updateUI(); });
+            elements.sliderAffinity.addEventListener('input', (e) => { state.affinity = parseInt(e.target.value); updateUI(); });
+
+            elements.btnToggleDualAffinity.addEventListener('click', () => {
+                elements.panelDualAffinity.classList.toggle('hidden');
+                elements.iconDualChevron.classList.toggle('rotate-180');
+            });
+
+            elements.toggleDualAffinityCheckbox.addEventListener('change', (e) => {
+                state.isDualAffinity = e.target.checked;
+                updateUI();
+            });
+
+            elements.sliderNegAffinity.addEventListener('input', (e) => { state.negAffinity = parseInt(e.target.value); updateUI(); });
+            elements.sliderPosAffinity.addEventListener('input', (e) => { state.posAffinity = parseInt(e.target.value); updateUI(); });
+
+            elements.selectElementType.addEventListener('change', (e) => { state.elementType = e.target.value; updateUI(); });
+            elements.sliderElement.addEventListener('input', (e) => { state.elementVal = parseInt(e.target.value); updateUI(); });
+
+            elements.toggleDualElementCheckbox.addEventListener('change', (e) => {
+                state.isDualElement = e.target.checked;
+                updateUI();
+            });
+
+            elements.selectElementType2.addEventListener('change', (e) => { state.elementType2 = e.target.value; updateUI(); });
+            elements.sliderElement2.addEventListener('input', (e) => { state.elementVal2 = parseInt(e.target.value); updateUI(); });
+
+            ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'White', 'Purple'].forEach(col => {
+                const slider = elements['sh' + col];
+                if (slider) {
+                    slider.addEventListener('input', (e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        state.sharpness[col.toLowerCase()] = val;
+                        updateUI();
+                    });
+                }
+            });
+
+            elements.slot1.addEventListener('change', (e) => { state.slots[0] = parseInt(e.target.value); updateUI(); });
+            elements.slot2.addEventListener('change', (e) => { state.slots[1] = parseInt(e.target.value); updateUI(); });
+            elements.slot3.addEventListener('change', (e) => { state.slots[2] = parseInt(e.target.value); updateUI(); });
+            elements.inputDesc.addEventListener('input', (e) => { state.description = e.target.value; updateUI(); });
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const presetKey = e.currentTarget.getAttribute('data-preset');
+                    if (PRESETS[presetKey]) {
+                        applyPreset(PRESETS[presetKey]);
+                    }
+                });
+            });
+
+            const modal = document.getElementById('formula-modal');
+            document.getElementById('btn-formula-modal').addEventListener('click', () => modal.classList.remove('hidden'));
+            document.getElementById('btn-close-modal').addEventListener('click', () => modal.classList.add('hidden'));
+            document.getElementById('btn-close-modal-2').addEventListener('click', () => modal.classList.add('hidden'));
+
+            document.getElementById('btn-reset').addEventListener('click', () => applyPreset(PRESETS.baseline));
+        }
+
+        function applyPreset(preset) {
+            state.name = preset.name;
+            state.type = preset.type;
+            state.attack = preset.attack;
+            state.affinity = preset.affinity;
+            state.elementType = preset.elementType;
+            state.elementVal = preset.elementVal;
+            state.sharpness = { ...preset.sharpness };
+            state.slots = [...preset.slots];
+            state.defense = preset.defense;
+            state.phialType = preset.phialType || 'Power';
+            state.phialValue = preset.phialValue || 20;
+
+            if (preset.coatings) state.coatings = JSON.parse(JSON.stringify(preset.coatings));
+            if (preset.bowCharges) state.bowCharges = JSON.parse(JSON.stringify(preset.bowCharges));
+            if (preset.c4Disabled !== undefined) state.c4Disabled = preset.c4Disabled;
+
+            elements.inputName.value = state.name;
+            elements.selectType.value = state.type;
+            elements.sliderAttack.value = state.attack;
+            elements.sliderAffinity.value = state.affinity;
+            elements.selectElementType.value = state.elementType;
+            elements.sliderElement.value = state.elementVal;
+            elements.inputDefense.value = state.defense;
+
+            elements.slot1.value = state.slots[0];
+            elements.slot2.value = state.slots[1];
+            elements.slot3.value = state.slots[2];
+
+            Object.keys(state.sharpness).forEach(c => {
+                const sliderKey = 'sh' + c.charAt(0).toUpperCase() + c.slice(1);
+                if (elements[sliderKey]) elements[sliderKey].value = state.sharpness[c];
+            });
+
+            updateUI();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initElements();
+            populateKinsectOptions();
+            bindEvents();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
